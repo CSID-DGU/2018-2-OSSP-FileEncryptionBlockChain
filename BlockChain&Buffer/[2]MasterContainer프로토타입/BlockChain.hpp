@@ -225,20 +225,24 @@ public:
 		}
 	}
 
-	void InsertFileHash(string FileHash)
+	pair<int,int> InsertFileHash(string FileHash)
 	{
+		//리턴값 : 이제 삽입할 파일해쉬의 위치.
+		int RetBlockIndex = m_HashBufferList.GetBufferBlockNumber();
+		int RetHashIndex = m_HashBufferList.GetLastBufferBlockIt()->GetCount();
+		if (RetHashIndex == 5) { RetBlockIndex++; RetHashIndex = 0; }
+
 		//넣고 버퍼에 5개가 찼는지?
 		if(true == m_HashBufferList.InsertFileHash(FileHash))
 		{
-
 			//채굴중이 아니라면 바로 채굴시작
 			if (m_MiningFlag == false)
 			{				
 				//채굴할 블럭 it를 대상으로 채굴 쓰레드 생성.
 				thread t1([&]() { 
 					// it 는 채굴해야 하는 블럭
-					auto it = m_HashBufferList.GetLastBufferBlockIt();
-					MiningThreadFunc(it);
+					auto it1 = m_HashBufferList.GetLastBufferBlockIt();
+					MiningThreadFunc(it1);
 					//cout << "test" << endl;
 				});
 				t1.detach();
@@ -252,6 +256,8 @@ public:
 				m_MiningQueue.push(it);
 			}
 		}		
+
+		return pair<int, int>(RetBlockIndex, RetHashIndex);	
 	}
 
 	void SetOwnerUser(string OwnerUser) { this->m_OwnerUser = OwnerUser; }
@@ -268,7 +274,7 @@ public:
 			string blockHash = sha256(header + to_string(nonce));
 
 			//20비트 0으로 맞추기, 10분정도 걸림.
-			if (blockHash.substr(0, 5) == "00000") {
+			if (blockHash.substr(0, 2) == "00") {
 				// cout << "nonce: " << nonce;
 				// cout << "header: " << header;
 				return make_pair(blockHash, to_string(nonce));

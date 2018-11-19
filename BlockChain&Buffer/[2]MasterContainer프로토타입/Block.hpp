@@ -107,6 +107,11 @@ public:
 		InsertFileHash(FileHash);
 	}
 
+	int GetCount()
+	{
+		return HashCount;
+	}
+
 	bool IsFull()
 	{
 		if (HashCount >= 5) return true; else return false;
