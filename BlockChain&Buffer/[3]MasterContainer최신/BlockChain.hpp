@@ -118,7 +118,7 @@ public:
 	bool InsertFileHash(string FileHash)
 	{
 		//항상 버퍼는 최소 한 블럭씩 준비
-		if(List.empty()) this->List.push_back(FileHashBuffer());
+		if (List.empty()) this->List.push_back(FileHashBuffer());
 
 		if (this->List.back().IsFull())
 		{
@@ -146,12 +146,12 @@ public:
 	}
 
 	void ListDump()
-	{	
+	{
 		int index = 0;
 		for (auto it = this->List.begin(); it != this->List.end(); it++)
-		{			
+		{
 			cout << "[" + to_string(index) + "]" + ' ';
-			it->FileHashBufferDump(); 
+			it->FileHashBufferDump();
 			cout << endl;
 			index++;
 		}
@@ -204,20 +204,27 @@ public:
 
 
 
-	void MiningThreadFunc(list<FileHashBuffer>::iterator it);	
+	void MiningThreadFunc(list<FileHashBuffer>::iterator it);
 	bool m_MiningCancelFlag;
 
 
 	//Constructor
 	MasterContainerClass() : m_BlockChain(0), m_HashBufferList(), m_MiningCancelFlag(false),
-							m_OwnerUser(""), m_MiningFlag(false), m_MiningQueue() , BlockCount(0),
-							HashCount(0), m_pNodeInfoList(nullptr), m_MyNodeName("")
+		m_OwnerUser(""), m_MiningFlag(false), m_MiningQueue(), BlockCount(0),
+		HashCount(0), m_pNodeInfoList(nullptr), m_MyNodeName("")
 	{
 		CryptoPP::AutoSeededRandomPool rng;
 		rng.GenerateBlock((CryptoPP::byte *)&m_MiningSeed, 4);
-		cout <<"Mining Seed Value : " << m_MiningSeed << endl;
+		cout << "Mining Seed Value : " << m_MiningSeed << endl;
 	}
-	
+
+	//진행중인 채굴 중단.
+	void CancelMining()
+	{
+		if (m_MiningFlag == true) { m_MiningCancelFlag = true; }
+	}
+
+
 	//블럭체인 전파하는데 필요
 	void SetNodeInfoList(map<string, string> *pNodeInfoList, string MyNodeName)
 	{
@@ -226,10 +233,10 @@ public:
 	}
 
 
-	string GetFileHash(int BlockIndex, int HashIndex )
+	string GetFileHash(int BlockIndex, int HashIndex)
 	{
 		//BufferList 에서 가져온다.
-		if (BlockIndex > (m_BlockChain.getNumOfBlocks()-1))
+		if (BlockIndex > (m_BlockChain.getNumOfBlocks() - 1))
 		{
 			BlockIndex = BlockIndex - m_BlockChain.getNumOfBlocks();
 			return m_HashBufferList.GetFileHash(BlockIndex, HashIndex);
@@ -258,23 +265,23 @@ public:
 	{
 		HashCount++;
 		if (HashCount == 6) { BlockCount++;  HashCount = 1; }
-		
+
 
 		//넣고 버퍼에 5개가 찼는지?
-		if(true == m_HashBufferList.InsertFileHash(FileHash))
+		if (true == m_HashBufferList.InsertFileHash(FileHash))
 		{
 			//채굴중이 아니라면 바로 채굴시작
 			if (m_MiningFlag == false)
-			{				
+			{
 				//채굴할 블럭 it를 대상으로 채굴 쓰레드 생성.
-				thread t1([&]() { 
+				thread t1([&]() {
 					// it 는 채굴해야 하는 블럭
 					auto it1 = m_HashBufferList.GetLastBufferBlockIt();
 					MiningThreadFunc(it1);
 					//cout << "test" << endl;
 				});
 				t1.detach();
-								
+
 				m_MiningFlag = true;
 			}
 			//이미 채굴중이라면 큐에 넣음.
@@ -283,21 +290,21 @@ public:
 				auto it = m_HashBufferList.GetLastBufferBlockIt();
 				m_MiningQueue.push(it);
 			}
-		}		
+		}
 
 	}
 
 	void SetOwnerUser(string OwnerUser) { this->m_OwnerUser = OwnerUser; }
 
 	//채굴 쓰레드용 채굴 함수.
-	pair<string, string> MyFindHash(int index, string prevHash, vector<string> &merkle, bool& flag) {
+	pair<string, string> MyFindHash(int index, string prevHash, vector<string> &merkle) {
 		string header = to_string(index) + prevHash + getMerkleRoot(merkle);
-		
+
 		uint32_t nonce;
-		for (nonce = this->m_MiningSeed ;  ; nonce++) {
+		for (nonce = this->m_MiningSeed; ; nonce++) {
 
 			//중지 플래그가 설정되면 즉시 채굴 중단
-			if (flag == true) { flag = false;  return make_pair("fail", "fail"); }
+			if (m_MiningCancelFlag == true) { m_MiningCancelFlag = false;  return make_pair("fail", "fail"); }
 
 			string blockHash = sha256(header + to_string(nonce));
 
@@ -322,16 +329,16 @@ void MasterContainerClass::MiningThreadFunc(list<FileHashBuffer>::iterator it)
 	cout << "Mining start " << endl;
 
 	//채굴 
-	auto pair = this->MyFindHash(m_BlockChain.getNumOfBlocks(), m_BlockChain.getLatestBlockHash(), 
-		it->GetFileHashVector(), this->m_MiningCancelFlag);
-	
+	auto pair = this->MyFindHash(m_BlockChain.getNumOfBlocks(), m_BlockChain.getLatestBlockHash(),
+		it->GetFileHashVector());
+
 	//채굴 중단 요청 ->  채굴중인 버퍼를 버리고 쓰레드 종료.
-	if (pair == make_pair(string("fail"), string("fail"))) 
-	{ 
+	if (pair == make_pair(string("fail"), string("fail")))
+	{
 		// 다른곳에서 채굴을 완료해서 블럭을 줬을테니 it는 리스트에서 제거
 		m_HashBufferList.EraseBufferBlock(it);
 		//다른 블럭의 채굴이 계속 될 수 있도록 플래그 제거
-		
+
 		this->m_MiningCancelFlag = false;
 
 		//큐에 이어서 채굴해야할 블럭이 있다면 채굴진행.
@@ -346,12 +353,12 @@ void MasterContainerClass::MiningThreadFunc(list<FileHashBuffer>::iterator it)
 			m_MiningFlag = false;
 
 		cout << "채굴 강제 종료 " << endl;
-		return; 
+		return;
 	}
 
 
 	// add the block to the blockchain
-	m_BlockChain.addBlock(m_BlockChain.getNumOfBlocks(), m_BlockChain.getLatestBlockHash(), pair.first, pair.second, 
+	m_BlockChain.addBlock(m_BlockChain.getNumOfBlocks(), m_BlockChain.getLatestBlockHash(), pair.first, pair.second,
 		it->GetFileHashVector());
 
 	//채굴을 완료한 버퍼는 삭제,
@@ -363,9 +370,9 @@ void MasterContainerClass::MiningThreadFunc(list<FileHashBuffer>::iterator it)
 	}
 
 	// send the blockchain to the network
-	for (auto it = m_pNodeInfoList->begin(); it != m_pNodeInfoList->end(); it++) 
+	for (auto it = m_pNodeInfoList->begin(); it != m_pNodeInfoList->end(); it++)
 	{
-		if (it->first != m_MyNodeName) 
+		if (it->first != m_MyNodeName)
 		{
 			HttpClient client(it->second);
 			try {
@@ -394,8 +401,8 @@ void MasterContainerClass::MiningThreadFunc(list<FileHashBuffer>::iterator it)
 
 
 	cout << "Mining end " << endl;
-	return ;
-	
+	return;
+
 }
 
 
