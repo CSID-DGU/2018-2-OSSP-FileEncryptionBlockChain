@@ -2,7 +2,7 @@ ME = main
 OBJS = Node
 
 CXX = g++
-CXXFLAGS = -std=c++14 -lssl -lcrypto -lcrypto++ -lpthread -Wall -lboost_system
+CXXFLAGS = -std=c++17 -lssl -lcrypto -lcrypto++ -lpthread -Wall -lboost_system -lstdc++fs
 
 main.o : Node.cpp
 	$(CXX) $(CXXFLAGS) Node.cpp -o $(OBJS)

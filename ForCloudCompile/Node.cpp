@@ -78,9 +78,9 @@ int main()
 		cout << "* Data Name :" << DataName << endl;
 
 		//./AESUserFiles 디렉터리 생성
-		std::filesystem::path dir(".\\BackUpUserFiles");
-		if (!(std::filesystem::exists(dir))) {
-			std::filesystem::create_directory(dir);
+		std::experimental::filesystem::path dir(".\\BackUpUserFiles");
+		if (!(std::experimental::filesystem::exists(dir))) {
+			std::experimental::filesystem::create_directory(dir);
 		}
 
 		string AESFile = DecodeBase64String(AESBase64File);
@@ -177,9 +177,9 @@ int main()
 			string FileHash = sha256(DecodeBase64string);
 
 			//./AESUserFiles 디렉터리 생성
-			std::filesystem::path dir(".\\AESUserFiles");
-			if (!(std::filesystem::exists(dir))) {
-				std::filesystem::create_directory(dir);
+			std::experimental::filesystem::path dir(".\\AESUserFiles");
+			if (!(std::experimental::filesystem::exists(dir))) {
+				std::experimental::filesystem::create_directory(dir);
 			}
 
 			//원본 파일 저장.

@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include <string>
-#include <filesystem>
+#include <experimental/filesystem>
 
 #include <crypto++/rsa.h>
 #include <crypto++/osrng.h>
@@ -21,7 +21,7 @@ void GenAndStoreAESKeyAndIV()
 	AutoSeededRandomPool rnd;
 
 
-	std::experimental::filesystem::create_directories(".//KEY");
+	std::filesystem::create_directories(".//KEY");
 
 	// Generate a random key
 	SecByteBlock key(0x00, AES::DEFAULT_KEYLENGTH);
@@ -40,8 +40,8 @@ void GenAndStoreAESKeyAndIV()
 
 bool IsKeyAndIVFileExist()
 {
-	return (std::experimental::filesystem::exists(".\\KEY\\AESkey.dat") &&
-		std::experimental::filesystem::exists(".\\KEY\\AESIV.dat"));
+	return (std::filesystem::exists(".\\KEY\\AESkey.dat") &&
+		std::filesystem::exists(".\\KEY\\AESIV.dat"));
 }
 
 

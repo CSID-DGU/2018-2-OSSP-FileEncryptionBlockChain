@@ -1,5 +1,5 @@
 ME = main
-OBJS = SendSign
+OBJS = Node
 
 CXX = g++
 CXXFLAGS = -std=c++14 -lssl -lcrypto -lcrypto++ -lpthread -Wall -lboost_system
