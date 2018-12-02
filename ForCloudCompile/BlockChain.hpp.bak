@@ -232,14 +232,14 @@ public:
 	void MiningThreadFunc(list<FileHashBuffer>::iterator it);
 
 
-
+a
 	//Constructor
 	MasterContainerClass() : m_BlockChain(0), m_HashBufferList(), m_MiningCancelFlag(false),
 		m_OwnerUser(""), m_MiningFlag(false), m_MiningQueue(), m_BlockCount(0),
 		m_HashCount(0), m_pNodeInfoList(nullptr), m_MyNodeName(""), m_pUserInfoList(nullptr)
 	{
 		CryptoPP::AutoSeededRandomPool rng;
-		rng.GenerateBlock((CryptoPP::byte *)&m_MiningSeed, 4);
+		rng.GenerateBlock((byte *)&m_MiningSeed, 4);
 		cout << "Mining Seed Value : " << m_MiningSeed << endl;
 	}
 
