@@ -19,7 +19,7 @@ void print_hex(const char *label, const uint8_t *v, size_t len) {
 }
 
 string getMerkleRoot(const vector<string> &merkle) {
-	printf("Finding Merkle Root.... \n");
+	//printf("Finding Merkle Root.... \n");
 	if (merkle.empty())
 		return "";
 	else if (merkle.size() == 1) {

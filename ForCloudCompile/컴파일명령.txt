@@ -1,1 +1,1 @@
-g++ Node.cpp -o Node -std=c++17  -lstdc++fs -lssl -lstdc++ -lcrypto -lcrypto++ -lpthread -Wall -lboost_system  
+﻿g++ Node.cpp -o Node -std=c++17  -lstdc++fs -lssl -lstdc++ -lcrypto -lcrypto++ -lpthread -Wall -lboost_system  

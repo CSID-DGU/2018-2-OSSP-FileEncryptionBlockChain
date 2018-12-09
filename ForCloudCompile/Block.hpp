@@ -17,6 +17,7 @@ public:
 	string getPreviousHash(void);
 	string getHash(void);
 	int getIndex(void);
+	string getNonce(void);
 	vector<string> getData(void);
 	string GetFileHash(int HashIndex);
 
@@ -32,13 +33,17 @@ private:
 };
 // Constructor 
 Block::Block(int index, string prevHash, string hash, string nonce, vector<string> data) {
-	printf("Initializing Block: %d ---- Hash: %s \n", index, hash.c_str());
+	//printf("Initializing Block: %d ---- Hash: %s \n", index, hash.c_str());
 	this->previousHash = prevHash;
 	this->data = data;
 	this->index = index;
 	this->nonce = nonce;
 	this->blockHash = hash;
 
+}
+
+string Block::getNonce(void) {
+	return this->nonce;
 }
 
 int Block::getIndex(void) {

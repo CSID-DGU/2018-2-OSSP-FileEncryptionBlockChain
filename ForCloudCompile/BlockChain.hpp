@@ -3,8 +3,9 @@
 #define BLOCKCHAIN_H
 
 
-
+#include <filesystem>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include "hash.hpp"
 #include <vector>
@@ -28,12 +29,20 @@ public:
 	// void toString(void);
 	string toJSON(void);
 	int replaceChain(json chain);
-private:
+	json HandleBlockFilesTransfer(json Parameter);
+	bool ReplaceBlockFiles(map<string, string> *NodeInfoList, string MyNodeName);
+	int m_BlockNum;	//파일까지 고려한 모든 블록 수
+	const int m_MemoryBlockNumMax; // 메모리에 저장할 블록 수
+	int replaceChain2(json chain); // 블록 하나는 남기고 나머지 블록만 추가
+
 	vector<unique_ptr<Block> > blockchain; //vector that is the blockchain
+
+
+
 };
 
 // If integer passed into constructor is 0, it the first node and creates the genesis block
-BlockChain::BlockChain(int genesis) {
+BlockChain::BlockChain(int genesis) : m_MemoryBlockNumMax(3) {
 	if (genesis == 0) {
 		vector<string> v;
 		v.push_back("Genesis Block!");
@@ -41,29 +50,103 @@ BlockChain::BlockChain(int genesis) {
 		auto hash_nonce_pair = findHash(0, string("00000000000000"), v);
 		this->blockchain.push_back(std::make_unique<Block>(0, string("00000000000000"), hash_nonce_pair.first, hash_nonce_pair.second, v));
 		printf("Created blockchain!\n");
+		this->m_BlockNum = 1;
 	}
 }
 // Gets block based on the index
 Block BlockChain::getBlock(int index) {
-	for (int i = 0; i < blockchain.size(); i++) {
-		if (blockchain[i]->getIndex() == index) {
-			return *(blockchain[i]);
+	//메모리에서 가져오기
+	if (index > m_BlockNum - m_MemoryBlockNumMax - 1) {
+		for (int i = 0; i < blockchain.size(); i++) {
+			if (blockchain[i]->getIndex() == index) {
+				return *(blockchain[i]);
+			}
 		}
 	}
+	else { //파일에서 가져오기
+		if (index == 0) //제네시스 블록 가져오기
+		{
+			ifstream in(string("BlockChainFiles\\") + "Block" + to_string(index));
+			int Index;
+			string PreviousHash;
+			string Hash;
+			string Nonce;
+			in >> Index >> PreviousHash >> Hash >> Nonce;
+
+
+			vector<string> DataVector;
+			DataVector.push_back("Genesis Block!");
+
+			return Block(Index, PreviousHash, Hash, Nonce, DataVector);
+		}
+		//메모리에서 가져오기
+		ifstream in(string("BlockChainFiles\\") + "Block" + to_string(index));
+		int Index;
+		string PreviousHash;
+		string Hash;
+		string Nonce;
+		string FileHash1;
+		string FileHash2;
+		string FileHash3;
+		string FileHash4;
+		string FileHash5;
+		in >> Index >> PreviousHash >> Hash >> Nonce >>
+			FileHash1 >> FileHash2 >> FileHash3 >> FileHash4 >> FileHash5;
+
+		vector<string> FileHashVec;
+		FileHashVec.push_back(FileHash1);
+		FileHashVec.push_back(FileHash2);
+		FileHashVec.push_back(FileHash3);
+		FileHashVec.push_back(FileHash4);
+		FileHashVec.push_back(FileHash5);
+
+		return Block(Index, PreviousHash, Hash, Nonce, FileHashVec);
+	}
+
 	throw invalid_argument("Index does not exist.");
 }
 
 // returns number of blocks
 int BlockChain::getNumOfBlocks(void) {
-	return this->blockchain.size();
+	//return this->blockchain.size();
+	return this->m_BlockNum;
 }
 
 // checks whether data fits with the right hash -> add block
 int BlockChain::addBlock(int index, string prevHash, string hash, string nonce, vector<string> &merkle) {
 	string header = to_string(index) + prevHash + getMerkleRoot(merkle) + nonce;
-	if ((!sha256(header).compare(hash)) && (hash.substr(0, 2) == "00") && (index == blockchain.size())) {
+
+
+
+	if ((!sha256(header).compare(hash)) && (hash.substr(0, 2) == "00")) {
 		printf("Block hashes match --- Adding Block %s \n", hash.c_str());
 		this->blockchain.push_back(std::make_unique<Block>(index, prevHash, hash, nonce, merkle));
+
+		// 일정량 이상 차면 파일에 저장.
+		if (this->blockchain.size() > this->m_MemoryBlockNumMax)
+		{
+			//./BlockChainFiles 디렉터리 생성
+			std::experimental::filesystem::path dir("BlockChainFiles");
+			if (!(experimental::filesystem::exists(dir))) {
+				experimental::filesystem::create_directory(dir);
+			}
+			ofstream out(string("BlockChainFiles\\") + "Block" + to_string(m_BlockNum - m_MemoryBlockNumMax - 1));
+
+			out << blockchain[0]->getIndex() << endl;
+			out << blockchain[0]->getPreviousHash() << endl;
+			out << blockchain[0]->getHash() << endl;
+			out << blockchain[0]->getNonce() << endl;
+			for (int i = 0; i < 5; i++) {
+				//제네시스 블록 예외처리
+				if (blockchain[0]->getData()[0] == "Genesis Block!")
+				{
+					out << "Genesis Block!" << endl;
+					break;
+				}
+				out << blockchain[0]->GetFileHash(i) << endl;
+			}
+			this->blockchain.erase(blockchain.begin());
+		}
 		return 1;
 	}
 	cout << "Hash doesn't match criteria\n";
@@ -80,23 +163,148 @@ string BlockChain::toJSON() {
 	json j;
 	j["length"] = this->blockchain.size();
 	for (int i = 0; i < this->blockchain.size(); i++) {
-		j["data"][this->blockchain[i]->getIndex()] = this->blockchain[i]->toJSON();
+		j["data"][i] = this->blockchain[i]->toJSON();
 	}
 	return j.dump(3);
 }
 
 // replaces Chain with new chain represented by a JSON, used when node sends new blockchain
 int BlockChain::replaceChain(json chain) {
-	//remove all blocks except for the first block
-	while (this->blockchain.size() > 1) {
-		this->blockchain.pop_back();
-	}
-	for (int a = 1; a < chain["length"].get<int>(); a++) {
+	//그냥 모든 체인 삭제
+	this->blockchain.clear();
+
+	for (int a = 0; a < chain["length"].get<int>(); a++) {
 		auto block = chain["data"][a];
 		vector<string> data = block["data"].get<vector<string> >();
 		this->addBlock(block["index"], block["previousHash"], block["hash"], block["nonce"], data);
 	}
 	return 1;
+}
+
+int BlockChain::replaceChain2(json chain) {
+	
+	//하나만 남기고 블록체인 삭제
+	while (blockchain.size() != 1) {
+		blockchain.pop_back();
+	}
+
+	for (int a = 0; a < chain["length"].get<int>(); a++) {
+		auto block = chain["data"][a];
+		vector<string> data = block["data"].get<vector<string> >();
+		this->addBlock(block["index"], block["previousHash"], block["hash"], block["nonce"], data);
+	}
+	return 1;
+}
+
+json BlockChain::HandleBlockFilesTransfer(json Parameter)
+{
+	json retBlockFiles;
+	int FirstBlockIndex = Parameter["FirtstBlockIndex"].get<int>();
+	int FileBlockNum = getNumOfBlocks() - blockchain.size();
+	vector<int> IndexVector;
+
+	//디스크에 없는 파일 요청 예외처리
+	if (FirstBlockIndex + 1 > FileBlockNum)
+	{
+		retBlockFiles["IsSuccess"] = false;
+		return retBlockFiles;
+	}
+
+	//파일을 일정 단위로 읽어와서 json에 저장
+	for (int BlockIndex = FirstBlockIndex; BlockIndex < BlockIndex + m_MemoryBlockNumMax; BlockIndex++)
+	{
+		if (BlockIndex + 1 > FileBlockNum)
+			break;
+
+		retBlockFiles[to_string(BlockIndex)] = getBlock(BlockIndex).toJSON();
+		IndexVector.push_back(BlockIndex);
+	}
+	retBlockFiles["IndexVector"] = IndexVector;
+	retBlockFiles["IsSuccess"] = true;
+
+	//새로 채굴된 블럭이 있을수 있으니 다시 계산
+	FileBlockNum = getNumOfBlocks() - blockchain.size();
+
+	//더 보낼 파일이 있는경우
+	if (IndexVector.back() < FileBlockNum - 1)
+	{
+		retBlockFiles["isFull"] = false;
+	}
+	//모든 파일을 전부 전송한 경우.
+	else
+	{
+		retBlockFiles["isFull"] = true;
+	}
+
+	return retBlockFiles;
+}
+
+bool BlockChain::ReplaceBlockFiles(map<string, string> *NodeInfoList, string MyNodeName)
+{
+	auto it1 = NodeInfoList->find(MyNodeName);
+	if (++it1 == NodeInfoList->end()) {
+		it1 = NodeInfoList->begin();
+	}
+	string RequestNodeAddress = it1->second;
+
+
+	int FirstFileIndex = 0;
+
+	while (1)
+	{
+
+		HttpClient Client(RequestNodeAddress);
+		json j;
+		j["FirtstBlockIndex"] = FirstFileIndex;
+		auto req = Client.request("GET", "/GETBlockFiles", j.dump());
+
+		json ret = json::parse(req->content.string());
+
+		//요청 failed
+		if (ret["IsSuccess"] == false)
+		{
+			return false;
+		}
+
+		vector<int> IndexVector = ret["IndexVector"].get< vector<int> >();
+		for (auto it = IndexVector.begin(); it != IndexVector.end(); it++)
+		{
+			//블록체인 디렉터리 생성
+			std::experimental::filesystem::path dir("BlockChainFiles");
+			if (!(experimental::filesystem::exists(dir))) {
+				experimental::filesystem::create_directory(dir);
+			}
+			ofstream out(string("BlockChainFiles\\") + "Block" + to_string(*it));
+
+			//블록 읽어와서 파일에 쓰기
+			auto block = ret[to_string(*it)];
+			vector<string> data = block["data"].get<vector<string> >();
+			out << block["index"] << endl;
+			out << block["previousHash"] << endl;
+			out << block["hash"] << endl;
+			out << block["nonce"] << endl;
+			for (int i = 0; i < 5; i++) {
+				//제네시스 블록 예외처리
+				if (*it == 0)
+				{
+					out << "Genesis Block!" << endl;
+					break;
+				}
+				out << data[i] << endl;
+			}
+			cout << " Repace File" << *it << endl;
+		}
+
+		if (ret["isfull"] == true) {
+			break;
+		}
+		else {
+			FirstFileIndex = IndexVector.back() + 1;
+			continue;
+		}
+	}
+
+	return true;
 }
 
 class FileHashBufferList
@@ -239,7 +447,7 @@ public:
 		m_HashCount(0), m_pNodeInfoList(nullptr), m_MyNodeName(""), m_pUserInfoList(nullptr)
 	{
 		CryptoPP::AutoSeededRandomPool rng;
-		rng.GenerateBlock((byte *)&m_MiningSeed, 4);
+		rng.GenerateBlock((CryptoPP::byte *)&m_MiningSeed, 4);
 		cout << "Mining Seed Value : " << m_MiningSeed << endl;
 	}
 
@@ -272,8 +480,59 @@ public:
 			BlockIndex = BlockIndex - m_BlockChain.getNumOfBlocks();
 			return m_HashBufferList.GetFileHash(BlockIndex, HashIndex);
 		}
+		//블럭체인에서 가져온다.
 		else
 		{
+			bool isHashError; //블록체인 난스, 해쉬 에러 여부 검사
+			string retFileHash; //리턴할 파일해쉬값
+
+			try {
+				retFileHash = m_BlockChain.getBlock(BlockIndex).GetFileHash(HashIndex);
+			}
+			catch (const std::invalid_argument& ia) {
+				std::cerr << "Invalid argument: " << ia.what() << '\n';
+				exit(-1);
+			}
+
+			//블록체인 검증 절차
+			for (int i = BlockIndex; i < m_BlockChain.getNumOfBlocks(); i++)
+			{
+				string PrevBlockHash;
+				Block CurrentBlock = m_BlockChain.getBlock(i);
+				string nonce = CurrentBlock.getNonce();
+				string merkle = getMerkleRoot(CurrentBlock.getData());
+
+				if (i == 0) { //제네시스 블록
+					PrevBlockHash = string("00000000000000");
+				}
+				else {
+					PrevBlockHash = m_BlockChain.getBlock(i - 1).getHash();
+				}
+
+				string header = to_string(i) + PrevBlockHash + merkle;
+				string BlockHash = sha256(header + nonce);
+
+				//에러처리1 : "00"이 맞는지?
+				if (BlockHash.substr(0, 2) != "00") {
+					cout << "BLOCKCHAINERROR!!!!!!!!!" << endl;
+					//파일 + 메모리 블럭체인 교체 수행
+				}
+
+				//에러처리2 : 다음 블록해쉬와 맞는지?
+				if (i != m_BlockChain.getNumOfBlocks() - 1)
+				{
+					if (m_BlockChain.getBlock(i + 1).getPreviousHash() != BlockHash)
+					{
+						cout << "BLOCKCHAINERROR!!!!!!!!!" << endl;
+						//파일 + 메모리 블럭체인 교체 수행
+					}
+				}
+			}
+
+			return retFileHash;
+
+
+			/*
 			//블럭체인에서 가져온다.
 			try {
 				return m_BlockChain.getBlock(BlockIndex).GetFileHash(HashIndex);
@@ -282,6 +541,7 @@ public:
 				std::cerr << "Invalid argument: " << ia.what() << '\n';
 				exit(-1);
 			}
+			*/
 		}
 	}
 
@@ -361,6 +621,8 @@ public:
 
 		return j;
 	}
+
+
 
 	//입력받은 json 기반으로 MasterContainer초기화
 	void MakeContainerByJSON(json j, string MyNodeName, map<string, string> *pNodeInfoList, string OwnerUser = "")
@@ -448,21 +710,14 @@ void MasterContainerClass::MiningThreadFunc(list<FileHashBuffer>::iterator it)
 		cout << "Migning Forced termination " << endl;
 		return;
 	}
+	//Increase Block Num
+	m_BlockChain.m_BlockNum++;
+
 
 
 	// add the block to the blockchain
-	m_BlockChain.addBlock(m_BlockChain.getNumOfBlocks(), m_BlockChain.getLatestBlockHash(), pair.first, pair.second,
+	m_BlockChain.addBlock(m_BlockChain.getNumOfBlocks() - 1, m_BlockChain.getLatestBlockHash(), pair.first, pair.second,
 		it->GetFileHashVector());
-
-	//채굴을 완료한 버퍼는 삭제,
-	m_HashBufferList.EraseBufferBlock(it);
-
-	if (this->m_OwnerUser != "")
-	{
-		//채굴 성공 보상 사용자 권한 상승.
-		User& u = m_pUserInfoList->FindUser(m_OwnerUser);
-		u.MiningSuccessHandle();		
-	}
 
 	// send the blockchain to the network
 	for (auto it = m_pNodeInfoList->begin(); it != m_pNodeInfoList->end(); it++)
@@ -471,7 +726,17 @@ void MasterContainerClass::MiningThreadFunc(list<FileHashBuffer>::iterator it)
 		{
 			HttpClient client(it->second);
 			try {
-				auto req = client.request("POST", "/newchain", m_BlockChain.toJSON());
+				json j;
+				if (m_BlockChain.getNumOfBlocks() > m_BlockChain.m_MemoryBlockNumMax) {
+					j["ReplaceType"] = 2;
+				}
+				else {
+					j["ReplaceType"] = 1;
+				}
+				
+				j["BlockNum"] = m_BlockChain.getNumOfBlocks();
+				j["BlockChain"] = m_BlockChain.toJSON();
+				auto req = client.request("POST", "/newchain", j.dump());
 				cout << "BlockChainSend" << endl;
 			}
 			catch (const SimpleWeb::system_error &e) {
@@ -480,6 +745,15 @@ void MasterContainerClass::MiningThreadFunc(list<FileHashBuffer>::iterator it)
 		}
 	}
 
+	//채굴을 완료한 버퍼는 삭제,
+	m_HashBufferList.EraseBufferBlock(it);
+
+	if (this->m_OwnerUser != "")
+	{
+		//채굴 성공 보상 사용자 권한 상승.
+		User& u = m_pUserInfoList->FindUser(m_OwnerUser);
+		u.MiningSuccessHandle();
+	}
 
 
 
