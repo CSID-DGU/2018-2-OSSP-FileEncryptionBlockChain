@@ -42,6 +42,7 @@ int main()
 
 	HttpServer server;
 	server.config.port = 1111;
+
 	server.resource["^/GETBlockFiles"]["GET"] = [](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		json content = json::parse(request->content);
 		json Blockfiles = MasterContainer.m_BlockChain.HandleBlockFilesTransfer(content);
@@ -364,7 +365,6 @@ int main()
 				auto req2 = client1.request("POST", "/RequestData", j2.dump());
 				data = req2->content.string();
 			}
-
 			//데이터가 로컬에 있을경우 데이터 요청
 			else{
 				string dataname = j2["DataPath"].get<string>();
@@ -415,7 +415,6 @@ int main()
 					auto req2 = client1.request("POST", "/RequestData", j2.dump());
 					data = req2->content.string();
 				}
-
 				//데이터가 로컬에 있을경우
 				else {
 					string dataname = j2["DataPath"].get<string>();
@@ -430,8 +429,9 @@ int main()
 
 					data = pBuffer;
 					delete pBuffer;
-				}
 
+
+				}
 
 				//데이터의 해시 계산하기
 				string DecodeBase64string = DecodeBase64String(data);
@@ -507,6 +507,40 @@ int main()
 		}
 	};
 
+	server.resource["^/RequestList$"]["POST"] = [](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		try
+		{
+			json content1 = json::parse(request->content);
+			string RSAKey = content1["RSAKey"].get<string>();
+
+			//해당 유저가 있는지 확인
+			User& u = UserInfoList.FindUser(RSAKey);
+			if (u.UserName != RSAKey)
+			{
+				cout << " Invalid User UploadFile Reques !!" << endl;
+				response->write("DownloadFile Failed\n");
+				return;
+			}
+
+			//해당 유저의 모든 데이터명 확인, 연결
+			map<string, UserData>::iterator iter;
+			map<string, UserData> v = u.UserDataMap;
+
+			string data;
+			for (iter = v.begin(); iter != v.end(); ++iter) {
+				data = data + iter->first + '\n';
+			}
+			//해당 유저의 데이터명 리스트 반환
+			response->write(data);
+
+		}
+		catch (const exception &e)
+		{
+			*response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << strlen(e.what()) << "\r\n\r\n" << e.what();
+		}
+	};
+
 
 
 	thread server_thread([&server]() {server.start(); });
@@ -522,26 +556,29 @@ int main()
 		{
 			cout << MasterContainer.toJSON().dump(3);
 		}
-		else if (UserInput == "g2")
+		else if (UserInput == "g2")//userinfolist 출력
 		{
-			;
+			cout << "userinfolist" << endl;
+			vector<User>::iterator iter;
+			vector<User> v = UserInfoList._UserInfoList;
+
+			for (iter = v.begin(); iter != v.end(); ++iter) {
+				cout << iter->UserName << endl;
+			}
 		}
-		else if (UserInput == "g3")
+		else if (UserInput == "g3")//nodeinfolist 출력
 		{
-			;
+			cout << "nodeinfolist" << endl;
+			auto it1 = NodeInfoList.begin();
+			for (it1 = NodeInfoList.begin(); it1 != NodeInfoList.end(); ++it1) {
+				cout << it1->first << endl;
+			}
+
 		}
 		else if (UserInput == "g4")
 		{
 			cout << "[Node owner User] : " << MasterContainer.m_OwnerUser << endl;
 			cout << "[Node Name] : " << MyNodeName << endl;
-		}
-		else if (UserInput == "g5")
-		{
-			;
-		}
-		else if (UserInput == "g6")
-		{
-			;
 		}
 		else if (UserInput == "s1")
 		{
@@ -566,8 +603,6 @@ int main()
 			cout << "* g2 : Print UserInfoList" << endl;
 			cout << "* g3 : Print NodeInfoList" << endl;
 			cout << "* g4 : Print Node owner and Node Name" << endl;
-			cout << "* g5 : Print list of Orgin User Files" << endl;
-			cout << "* g6 : Print list of Back Up Files" << endl;
 			cout << "* s1 : Set owner User" << endl;
 			cout << "* s2 : Set Node Name" << endl;
 		}

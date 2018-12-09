@@ -103,6 +103,7 @@ int main()
 				j["RSAKey"] = MyName;
 				j["DataName"] = DataName ;
 
+				
 				try {
 					TextBox.append("* POST Upload File\n", false);
 					auto req = client.request("POST", "/UploadFile", j.dump());
@@ -112,6 +113,24 @@ int main()
 				{
 					TextBox.append(string("* Client request error:") + e.what(), false);
 				}
+				
+				/*
+				//채굴 테스트용 업로드 코드 (한번에 5개의 업로드 요청)
+				try {
+					for (int i = 0; i < 5; i++) {
+						j["DataName"] = DataName + to_string(i);
+						DataName = DataName + to_string(i);
+						TextBox.append("* POST Upload File\n", false);
+						auto req = client.request("POST", "/UploadFile", j.dump());
+						TextBox.append(req->content.string(), false);
+					}
+				}
+				catch (const SimpleWeb::system_error &e)
+				{
+					TextBox.append(string("* Client request error:") + e.what(), false);
+				}
+				*/
+
 				
 				//FileNameTable 기록
 				FileNameTable.insert(make_pair(DataName, filePath));
@@ -123,10 +142,22 @@ int main()
 	DownloadButton.events().click([&] {
 		//fm.close();
 		//FileUpload 요청보냄
+
+
+
 		string NodeAddress;
 		string DataName;
 		DownloadDataEdit.getline(0, DataName);
 		NodeAddressEdit.getline(0, NodeAddress);
+
+		if (DataName == "" || NodeAddress == "")
+		{
+			msgbox mb(fm, "Error");
+			mb << "You have to Input Data Name or Node Address";
+			mb.show();
+			return;
+		}
+
 
 		HttpClient client2(NodeAddress);
 		json j1;
@@ -136,7 +167,7 @@ int main()
 		TextBox.append("* GET DownloadFile File\n", false);
 		auto req2 = client2.request("POST", "/DownloadFile", j1.dump());
 		vector<char> v = AESDecrypteDecodeBase64(req2->content.string());
-		TextBox.append("* Decrypte File Success\n", false);
+		TextBox.append(string("* Decrypte File Success File size") + '['+ to_string(v.size()) + "]\n", false);
 		string s(v.begin(), v.end());
 
 		std::ofstream out(FileNameTable[DataName], ios::binary);
@@ -148,8 +179,29 @@ int main()
 
 	button GetUserInfoButton{ fm, "Get user Info" };
 	GetUserInfoButton.events().click([&] {
-		fm.close();
+		//fm.close();
 		//GetUserInfo 요청보냄
+
+		string NodeAddress;
+		NodeAddressEdit.getline(0, NodeAddress);
+
+		if (NodeAddress == "")
+		{
+			msgbox mb(fm, "Error");
+			mb << "You have to Input Node Address";
+			mb.show();
+			return;
+		}
+
+		json j1;
+		j1["RSAKey"] = MyName;
+
+		TextBox.append("* GET User Information\n", false);
+		HttpClient client2(NodeAddress);
+		auto req2 = client2.request("POST", "/RequestList", j1.dump());
+
+		//데이터 리스트 출력
+		TextBox.append(req2->content.string(), false);	
 	});
 
 
