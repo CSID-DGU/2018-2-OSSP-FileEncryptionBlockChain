@@ -1,4 +1,4 @@
-﻿//author: tko
+//author: tko
 #ifndef REQUESTS_H
 #define REQUESTS_H
 

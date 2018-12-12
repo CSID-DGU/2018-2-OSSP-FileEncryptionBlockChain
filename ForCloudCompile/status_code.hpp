@@ -1,4 +1,4 @@
-﻿#ifndef SIMPLE_WEB_STATUS_CODE_HPP
+#ifndef SIMPLE_WEB_STATUS_CODE_HPP
 #define SIMPLE_WEB_STATUS_CODE_HPP
 
 #include <string>

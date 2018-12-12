@@ -1,4 +1,4 @@
-﻿#ifndef SIMPLE_WEB_UTILITY_HPP
+#ifndef SIMPLE_WEB_UTILITY_HPP
 #define SIMPLE_WEB_UTILITY_HPP
 
 #include "status_code.hpp"

@@ -1,4 +1,4 @@
-﻿//author: tko
+//author: tko
 #ifndef BLOCK_H
 #define BLOCK_H
 

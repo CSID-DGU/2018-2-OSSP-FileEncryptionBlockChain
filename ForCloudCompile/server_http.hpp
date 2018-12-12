@@ -1,4 +1,4 @@
-﻿#ifndef SERVER_HTTP_HPP
+#ifndef SERVER_HTTP_HPP
 #define SERVER_HTTP_HPP
 
 #include "utility.hpp"

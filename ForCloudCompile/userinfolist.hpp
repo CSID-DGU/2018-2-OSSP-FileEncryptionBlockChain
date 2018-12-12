@@ -1,4 +1,4 @@
-ï»¿//2018-10-28 ê¹€íœ˜ê±´ : UserData, User, UserInfoListClass ì™„ì„±
+//2018-10-28 ±èÈÖ°Ç : UserData, User, UserInfoListClass ¿Ï¼º
 
 
 #pragma once
@@ -14,7 +14,7 @@ public:
 	int HashIndex;
 	string FileAddress;
 	string BackUpFileAddress;
-	
+
 
 	UserData(int _BlockIndex, int _HashIndex, string _FileAddress, string _BackUpFileAddress)
 	{
@@ -32,7 +32,7 @@ public:
 	map<string, UserData> UserDataMap;
 	int MiningCount;
 	int UsageCount;
-	
+
 	User()
 	{
 		this->UserName = "";
@@ -128,8 +128,73 @@ public:
 			if (a->UserName == _UserName)
 			{
 				return *a;
-			}			
+			}
 		}
 		cout << "This user is not registered" << endl;
+	}
+
+	json toJSON()
+	{
+		json retJSON;
+		retJSON["UserNum"] = _UserInfoList.size();
+
+		for (int i = 0; i < _UserInfoList.size(); i++)
+		{
+			retJSON[to_string(i)]["UserName"] = _UserInfoList[i].UserName;
+			retJSON[to_string(i)]["MiningCount"] = _UserInfoList[i].MiningCount;
+			retJSON[to_string(i)]["UsageCount"] = _UserInfoList[i].UsageCount;
+			if (_UserInfoList[i].UserDataMap.size() != 0)
+			{
+				int DataNum = _UserInfoList[i].UserDataMap.size();
+				retJSON[to_string(i)]["DataNum"] = DataNum;
+
+				int j = 0;
+				for (auto iter = _UserInfoList[i].UserDataMap.begin();
+					iter != _UserInfoList[i].UserDataMap.end(); iter++)
+				{
+					retJSON[to_string(i)][to_string(j)]["first"] = iter->first;
+					retJSON[to_string(i)][to_string(j)]["second"]["BlockIndex"] = iter->second.BlockIndex;
+					retJSON[to_string(i)][to_string(j)]["second"]["HashIndex"] = iter->second.HashIndex;
+					retJSON[to_string(i)][to_string(j)]["second"]["FileAddress"] = iter->second.FileAddress;
+					retJSON[to_string(i)][to_string(j)]["second"]["BackUpFileAddress"] = iter->second.BackUpFileAddress;
+					j++;
+				}
+			}
+			else {
+				retJSON[to_string(i)]["DataNum"] = 0;
+			}
+		}
+
+		return retJSON;
+	}
+
+	bool ReBuildUserInfoList(json UserInfoJSON)
+	{
+		int UserNum = UserInfoJSON["UserNum"].get<int>();
+		for (int i = 0; i < UserNum; i++)
+		{
+			string UserName = UserInfoJSON[to_string(i)]["UserName"].get<string>();
+			AddUser(UserName);
+			User& u = FindUser(UserName);
+			u.MiningCount = UserInfoJSON[to_string(i)]["MiningCount"].get<int>();
+			u.UsageCount = UserInfoJSON[to_string(i)]["UsageCount"].get<int>();
+
+			int DataNum = UserInfoJSON[to_string(i)]["DataNum"].get<int>();
+			if (DataNum != 0)
+			{
+				for (int j = 0; j < DataNum; j++)
+				{
+					string DataName = UserInfoJSON[to_string(i)][to_string(j)]["first"].get<string>();
+					int BlockIndex = UserInfoJSON[to_string(i)][to_string(j)]["second"]["BlockIndex"].get<int>();
+					int HashIndex = UserInfoJSON[to_string(i)][to_string(j)]["second"]["HashIndex"].get<int>();
+					string FileAddress = UserInfoJSON[to_string(i)][to_string(j)]["second"]["FileAddress"].get<string>();
+					string BackUpFileAddress = UserInfoJSON[to_string(i)][to_string(j)]["second"]["BackUpFileAddress"].get<string>();
+
+					u.AddUserData(DataName, UserData(BlockIndex, HashIndex, FileAddress, BackUpFileAddress));
+				}
+			}
+		}
+
+		return true;
 	}
 };

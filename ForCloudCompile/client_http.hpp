@@ -1,4 +1,4 @@
-﻿#ifndef CLIENT_HTTP_HPP
+#ifndef CLIENT_HTTP_HPP
 #define CLIENT_HTTP_HPP
 #pragma warning(disable:4996)
 
