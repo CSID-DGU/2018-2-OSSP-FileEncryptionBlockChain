@@ -66,7 +66,7 @@ Block BlockChain::getBlock(int index) {
 	else { //파일에서 가져오기
 		if (index == 0) //제네시스 블록 가져오기
 		{
-			ifstream in(string("BlockChainFiles\\") + "Block" + to_string(index));
+			ifstream in(string("BlockChainFiles//") + "Block" + to_string(index));
 			int Index;
 			string PreviousHash;
 			string Hash;
@@ -80,7 +80,7 @@ Block BlockChain::getBlock(int index) {
 			return Block(Index, PreviousHash, Hash, Nonce, DataVector);
 		}
 		//메모리에서 가져오기
-		ifstream in(string("BlockChainFiles\\") + "Block" + to_string(index));
+		ifstream in(string("BlockChainFiles//") + "Block" + to_string(index));
 		int Index;
 		string PreviousHash;
 		string Hash;
@@ -130,7 +130,7 @@ int BlockChain::addBlock(int index, string prevHash, string hash, string nonce, 
 			if (!(experimental::filesystem::exists(dir))) {
 				experimental::filesystem::create_directory(dir);
 			}
-			ofstream out(string("BlockChainFiles\\") + "Block" + to_string(m_BlockNum - m_MemoryBlockNumMax - 1));
+			ofstream out(string("BlockChainFiles/") + "Block" + to_string(m_BlockNum - m_MemoryBlockNumMax - 1));
 
 			out << blockchain[0]->getIndex() << endl;
 			out << blockchain[0]->getPreviousHash() << endl;
@@ -274,7 +274,7 @@ bool BlockChain::ReplaceBlockFiles(map<string, string> *NodeInfoList, string MyN
 			if (!(experimental::filesystem::exists(dir))) {
 				experimental::filesystem::create_directory(dir);
 			}
-			ofstream out(string("BlockChainFiles\\") + "Block" + to_string(*it));
+			ofstream out(string("BlockChainFiles/") + "Block" + to_string(*it));
 
 			//블록 읽어와서 파일에 쓰기
 			auto block = ret[to_string(*it)];

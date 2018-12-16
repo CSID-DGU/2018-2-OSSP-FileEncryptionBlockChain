@@ -116,7 +116,7 @@ int main()
 		//string AESFile = DecodeBase64String(AESBase64File);
 
 		//원본 파일 저장.
-		std::ofstream out(string("BackUpUserFiles\\") + RSAKey + DataName + string("back"), ios::binary);
+		std::ofstream out(string("BackUpUserFiles/") + RSAKey + DataName + string("back"), ios::binary);
 		out << AESBase64File;
 		out.close();
 
@@ -213,7 +213,7 @@ int main()
 		}
 
 		//원본 파일 저장.
-		std::ofstream out(string("AESUserFiles\\") + RSAKey + DataName, ios::binary);
+		std::ofstream out(string("AESUserFiles/") + RSAKey + DataName, ios::binary);
 		out << AESBase64File;
 		out.close();
 
@@ -360,7 +360,7 @@ int main()
 
 			//데이터 요청하기
 			json j2;
-			j2["DataPath"] = string("AESUserFiles\\") + RSAKey + DataName;
+			j2["DataPath"] = string("AESUserFiles/") + RSAKey + DataName;
 
 			string data;
 			//데이터가 외부에 있을경우 데이터요청
@@ -410,7 +410,7 @@ int main()
 			{
 				//다른 경우 백업파일의 해시를 받아서 다시 계산후 비교
 				json j2;
-				j2["DataPath"] = string("BackUpUserFiles\\") + RSAKey + DataName + string("back");
+				j2["DataPath"] = string("BackUpUserFiles/") + RSAKey + DataName + string("back");
 
 				string data;
 				//데이터가 외부에 있을경우
@@ -979,6 +979,7 @@ else {
 	//프롬프트
 	while (1)
 	{
+		std::this_thread::sleep_for(2s);
 		string UserInput;
 		cout << "\nCommand> " ;
 		cin >> UserInput;
