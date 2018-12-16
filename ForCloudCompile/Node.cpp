@@ -610,7 +610,7 @@ thread thread([&]
 			admitCheck = req2->content.string();
 			cout << admitCheck << endl;
 
-			if (admitCheck._Equal("fail")) {
+			if (admitCheck == "fail" ) {
 				check2++;
 			}
 		}
@@ -792,7 +792,7 @@ else {
 							admitCheck = req2->content.string();
 							cout << admitCheck << endl;
 
-							if (admitCheck._Equal("fail")) {
+							if (admitCheck == "fail") {
 								check++;
 							}
 						}
