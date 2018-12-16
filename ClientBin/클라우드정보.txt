@@ -1,0 +1,10 @@
+
+
+35.200.32.245:80
+35.246.66.51:80	
+35.193.85.41:80
+
+
+2018-2-OSSP-FileEncryptionBlockChain
+
+https://github.com/CSID-DGU/2018-2-OSSP-FileEncryptionBlockChain.git
