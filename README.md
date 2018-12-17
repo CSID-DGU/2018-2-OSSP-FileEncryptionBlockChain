@@ -1,9 +1,9 @@
-## FileEncryptionBlockChain
+# FileEncryptionBlockChain
 파일기반 암호화, 무결성 증명 기능을 제공하는 블럭체인입니다.
 9조 - 김휘건, 안지석, 양채훈
 
 
-## 실행사진
+# 실행사진
 
 # 1.블록 체인 내용 출력
 
