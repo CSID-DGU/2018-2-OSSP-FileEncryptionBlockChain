@@ -7,8 +7,8 @@
 
 # 1.블록 체인 내용 출력
 
-![]({{site.baseurl}}/./img/블록체인내용물.png)
+![]({{site.baseurl}}./img/블록체인내용물.png)
 
 # 2. 블록 전파 + 긴 블록체인 선호 정책
 
-![]({{site.baseurl}}/./img/블록체인전파+긴블록선호정책.png)
+![]({{site.baseurl}}./img/블록체인전파+긴블록선호정책.png)
