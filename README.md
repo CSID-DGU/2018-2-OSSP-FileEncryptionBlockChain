@@ -9,7 +9,7 @@
 
 ClientBin  : 클라이언트 프로그램 소스코드, 실행파일, 샘플 파일, 컴파일 하려면 nana, boost, crypto++ 라이브러리 필요
 
-NodeSrc    : 노드 프로그램 소스코드, Makefile 컴파일 하려면 boost, OpenSSL, crypto++ 라이브러리 필요 
+NodeSrc    : 노드 프로그램 소스코드, Makefile 컴파일 하려면 boost, OpenSSL, crypto++ 라이브러리 필요 , C++17버전 이상 
 
 
 # 실행사진
